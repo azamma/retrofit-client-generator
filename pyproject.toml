@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "retrofit-generator"
+version = "1.0.0"
+description = "Intelligent Java Retrofit API Client Generator for Spring Boot projects"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "Generated with Claude Code"}
+]
+keywords = ["retrofit", "java", "spring-boot", "code-generator", "api-client"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "click>=8.0.0",
+    "ruamel.yaml>=0.17.0",
+    "importlib-resources>=5.0; python_version<'3.9'",
+]
+
+[project.scripts]
+retrofit-generator = "retrofit_generator.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/retrofit-generator"
+Issues = "https://github.com/yourusername/retrofit-generator/issues"
+
+[tool.setuptools]
+packages = ["retrofit_generator"]
+
+[tool.setuptools.package-data]
+retrofit_generator = ["templates/**/*"]

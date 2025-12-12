@@ -1,0 +1,1 @@
+import __basePackage__.client.rest.api.__ApiName__Api;

@@ -1,0 +1,5 @@
+  __serviceIdentifier__:
+    baseUrl: __baseUrl__
+    loggingLevel: BODY
+    readTimeout: 30
+    connectTimeout: 30
