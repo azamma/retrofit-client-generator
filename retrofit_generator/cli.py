@@ -393,11 +393,27 @@ def _generate_service_identifier(api_name: str) -> str:
 
 
 @click.command()
-def main():
+@click.option('--api-name', default=None, help='API name in PascalCase (e.g., UserService, PaymentGateway)')
+@click.option('--endpoint-path', default=None, help='Endpoint path (e.g., api/v1/users)')
+@click.option('--base-url', default=None, help='Base URL (e.g., https://api.example.com/)')
+@click.option('--service-identifier', default=None, help='YAML property identifier (e.g., user-service-api). If not provided, auto-generated from api-name')
+@click.option('--credentials', default=None, help='Comma-separated credential field names (e.g., apiKey,token). Omit if no credentials needed')
+def main(api_name, endpoint_path, base_url, service_identifier, credentials):
     """
     Generate a complete Retrofit API client for Java/Spring Boot projects.
 
     Run this command from the root of your Java project.
+
+    \b
+    Examples:
+      # Interactive mode
+      retrofit-generator
+
+      # Non-interactive mode
+      retrofit-generator --api-name=UserService --endpoint-path=api/v1/users --base-url=https://api.example.com/
+
+      # With credentials
+      retrofit-generator --api-name=PaymentGateway --endpoint-path=v1/payments --base-url=https://pay.example.com/ --credentials=apiKey,secretKey
     """
     try:
         project_root = Path.cwd()
@@ -408,42 +424,57 @@ def main():
             click.echo("The package may not be installed correctly.", err=True)
             sys.exit(1)
 
-        # Prompt for API name
-        api_name = click.prompt('API name (PascalCase, e.g. UserService, PaymentGateway)', type=str)
+        # Detect if running in interactive mode
+        interactive_mode = not (api_name and endpoint_path and base_url)
 
-        # Prompt for endpoint path
-        endpoint_path = click.prompt('Endpoint path (e.g. api/v1/users)', type=str)
+        # Interactive mode if no parameters provided
+        if not api_name:
+            api_name = click.prompt('API name (PascalCase, e.g. UserService, PaymentGateway)', type=str)
 
-        # Prompt for base URL
-        base_url = click.prompt('Base URL (e.g. https://api.example.com/)', type=str)
+        if not endpoint_path:
+            endpoint_path = click.prompt('Endpoint path (e.g. api/v1/users)', type=str)
 
-        # Generate default service identifier
-        default_identifier = _generate_service_identifier(api_name)
-        click.echo(f"\n💡 Generated YAML property identifier: {default_identifier}")
-        change_identifier = click.prompt('Do you want to change it? (y/n)',
-                                        type=click.Choice(['y', 'n'], case_sensitive=False),
-                                        default='n')
+        if not base_url:
+            base_url = click.prompt('Base URL (e.g. https://api.example.com/)', type=str)
 
-        if change_identifier.lower() == 'y':
-            service_identifier = click.prompt('YAML property identifier', type=str)
-        else:
-            service_identifier = default_identifier
-            click.echo(f"✓ Using: {service_identifier}\n")
-
-        # Prompt for credentials
-        has_credentials = click.prompt('Does this API require credentials? (y/n)',
-                                      type=click.Choice(['y', 'n'], case_sensitive=False),
-                                      default='n')
-
-        credentials = None
-        if has_credentials.lower() == 'y':
-            credential_fields = click.prompt('Credential field names (comma-separated, e.g. apiKey,token)',
-                                           type=str,
-                                           default='')
-            if credential_fields:
-                credentials = [field.strip() for field in credential_fields.split(',') if field.strip()]
+        # Handle service identifier
+        if not service_identifier:
+            default_identifier = _generate_service_identifier(api_name)
+            if interactive_mode:
+                # Interactive mode: ask if user wants to change it
+                click.echo(f"\n💡 Generated YAML property identifier: {default_identifier}")
+                change_identifier = click.prompt('Do you want to change it? (y/n)',
+                                                type=click.Choice(['y', 'n'], case_sensitive=False),
+                                                default='n')
+                if change_identifier.lower() == 'y':
+                    service_identifier = click.prompt('YAML property identifier', type=str)
+                else:
+                    service_identifier = default_identifier
+                    click.echo(f"✓ Using: {service_identifier}\n")
             else:
-                click.echo("⚠️  No credential fields provided, skipping credentials section")
+                # Non-interactive mode: use auto-generated
+                service_identifier = default_identifier
+                click.echo(f"✓ Generated service identifier: {service_identifier}")
+
+        # Handle credentials
+        credential_list = None
+        if credentials is None:
+            # Interactive mode
+            has_credentials = click.prompt('Does this API require credentials? (y/n)',
+                                          type=click.Choice(['y', 'n'], case_sensitive=False),
+                                          default='n')
+            if has_credentials.lower() == 'y':
+                credential_fields = click.prompt('Credential field names (comma-separated, e.g. apiKey,token)',
+                                               type=str,
+                                               default='')
+                if credential_fields:
+                    credential_list = [field.strip() for field in credential_fields.split(',') if field.strip()]
+                else:
+                    click.echo("⚠️  No credential fields provided, skipping credentials section")
+        elif credentials:
+            # Non-interactive mode with credentials
+            credential_list = [field.strip() for field in credentials.split(',') if field.strip()]
+            click.echo(f"✓ Using credentials: {', '.join(credential_list)}")
 
         # Generate client
         generator = RetrofitClientGenerator(
@@ -453,7 +484,7 @@ def main():
             service_identifier=service_identifier,
             project_root=project_root,
             template_dir=TEMPLATE_DIR,
-            credentials=credentials
+            credentials=credential_list
         )
         generator.generate_all()
 

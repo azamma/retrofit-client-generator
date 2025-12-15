@@ -53,6 +53,8 @@ Esto instala el comando `retrofit-generator` globalmente en tu sistema.
 
 ## Uso
 
+### Modo Interactivo (Recomendado)
+
 1. **Navega a la raíz de tu proyecto Java**:
    ```bash
    cd /path/to/your/java/project
@@ -75,9 +77,39 @@ Esto instala el comando `retrofit-generator` globalmente en tu sistema.
    - El generador crea archivos Java con placeholders `/* TODO: Add fields */` que debes completar con los campos según la API
    - Si agregaste credenciales, actualiza los valores `TODO_ADD_VALUE` en el YAML con las credenciales reales
 
-## Ejemplo de Uso
+### Modo No-Interactivo (Línea de Comandos)
 
-### Ejemplo 1: API sin credenciales
+Puedes ejecutar el generador en una sola línea pasando todos los parámetros:
+
+```bash
+# Sintaxis básica
+retrofit-generator --api-name=<NombreAPI> --endpoint-path=<ruta> --base-url=<url>
+
+# API sin credenciales
+retrofit-generator --api-name=UserService --endpoint-path=api/v1/users --base-url=https://api.example.com/
+
+# API con credenciales
+retrofit-generator --api-name=PaymentGateway --endpoint-path=v1/payments --base-url=https://pay.example.com/ --credentials=apiKey,secretKey
+
+# Con service identifier personalizado
+retrofit-generator --api-name=BigDataCloud --endpoint-path=data/reverse-geocode --base-url=https://api-bdc.net/ --service-identifier=bdc-geo-api
+```
+
+**Parámetros disponibles:**
+- `--api-name`: Nombre de la API en PascalCase (requerido)
+- `--endpoint-path`: Ruta del endpoint (requerido)
+- `--base-url`: URL base del servicio (requerido)
+- `--service-identifier`: Identificador YAML (opcional, se auto-genera si no se proporciona)
+- `--credentials`: Lista de campos de credenciales separados por comas (opcional)
+
+**Ver ayuda:**
+```bash
+retrofit-generator --help
+```
+
+## Ejemplos de Uso
+
+### Ejemplo 1: Modo Interactivo - API sin credenciales
 
 ```bash
 $ retrofit-generator
@@ -126,7 +158,7 @@ http-client:
     connect-timeout: ${http-client.connect-timeout}
 ```
 
-### Ejemplo 2: API con credenciales
+### Ejemplo 2: Modo Interactivo - API con credenciales
 
 ```bash
 $ retrofit-generator
@@ -166,6 +198,81 @@ credentials:
   payment-gateway-api:
     apiKey: TODO_ADD_VALUE
     secretKey: TODO_ADD_VALUE
+```
+
+### Ejemplo 3: Modo No-Interactivo - Una sola línea
+
+```bash
+$ cd /path/to/java-project
+$ retrofit-generator --api-name=BigDataCloud --endpoint-path=data/reverse-geocode --base-url=https://api-bdc.net/
+
+✓ Generated service identifier: big-data-cloud-api
+
+🚀 Generating Retrofit client for: BigDataCloud
+   Base package: com.example.myapp
+   Endpoint: data/reverse-geocode
+
+📝 Generating Java files...
+✓ Created: src/main/java/com/example/myapp/client/dto/BigDataCloudRequestDto.java
+✓ Created: src/main/java/com/example/myapp/client/dto/BigDataCloudResponseDto.java
+...
+
+⚙️  Updating configuration files...
+✓ Added import to RestClientConfig.java
+✓ Added bean to RestClientConfig.java
+✓ Added bean to EndpointsConfig.java
+✓ Added default http-client.timeout property
+✓ Added default http-client.logging-level property
+✓ Added default http-client.connect-timeout property
+✓ Added configuration to application-local.yml
+
+✅ Successfully generated BigDataCloud Retrofit client!
+```
+
+**YAML generado:**
+```yaml
+http-client:
+  timeout: 30
+  logging-level: BODY
+  connect-timeout: 10
+  big-data-cloud-api:
+    base-url: https://api-bdc.net/
+    logging-level: ${http-client.logging-level}
+    read-timeout: ${http-client.timeout}
+    connect-timeout: ${http-client.connect-timeout}
+```
+
+### Ejemplo 4: Modo No-Interactivo - Con credenciales
+
+```bash
+$ retrofit-generator --api-name=AuthService --endpoint-path=oauth/v2/token --base-url=https://auth.example.com/ --credentials=clientId,clientSecret
+
+✓ Generated service identifier: auth-service-api
+✓ Using credentials: clientId, clientSecret
+
+🚀 Generating Retrofit client for: AuthService
+...
+✓ Added credentials section for auth-service-api
+
+✅ Successfully generated AuthService Retrofit client!
+```
+
+**YAML generado:**
+```yaml
+http-client:
+  timeout: 30
+  logging-level: BODY
+  connect-timeout: 10
+  auth-service-api:
+    base-url: https://auth.example.com/
+    logging-level: ${http-client.logging-level}
+    read-timeout: ${http-client.timeout}
+    connect-timeout: ${http-client.connect-timeout}
+
+credentials:
+  auth-service-api:
+    clientId: TODO_ADD_VALUE
+    clientSecret: TODO_ADD_VALUE
 ```
 
 ## Personalización de Templates
