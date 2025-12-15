@@ -1,5 +1,5 @@
   __serviceIdentifier__:
-    baseUrl: __baseUrl__
-    loggingLevel: BODY
-    readTimeout: 30
-    connectTimeout: 30
+    base-url: __baseUrl__
+    logging-level: ${http-client.logging-level}
+    read-timeout: ${http-client.timeout}
+    connect-timeout: ${http-client.connect-timeout}

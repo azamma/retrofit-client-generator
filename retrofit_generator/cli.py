@@ -205,8 +205,11 @@ class RetrofitClientGenerator:
         config_path = self.src_path / 'config' / 'RestClientConfig.java'
 
         if not config_path.exists():
-            click.echo(f"⚠️  RestClientConfig.java not found at {config_path}")
-            return
+            click.echo(f"⚠️  RestClientConfig.java not found at default location, searching...")
+            config_path = self._find_file_recursive('RestClientConfig.java', self.project_root)
+            if not config_path:
+                click.echo(f"⚠️  RestClientConfig.java not found in project")
+                return
 
         content = config_path.read_text(encoding='utf-8')
 
@@ -256,8 +259,11 @@ class RetrofitClientGenerator:
         config_path = self.src_path / 'config' / 'endpoints' / 'EndpointsConfig.java'
 
         if not config_path.exists():
-            click.echo(f"⚠️  EndpointsConfig.java not found at {config_path}")
-            return
+            click.echo(f"⚠️  EndpointsConfig.java not found at default location, searching...")
+            config_path = self._find_file_recursive('EndpointsConfig.java', self.project_root)
+            if not config_path:
+                click.echo(f"⚠️  EndpointsConfig.java not found in project")
+                return
 
         content = config_path.read_text(encoding='utf-8')
 
@@ -287,13 +293,25 @@ class RetrofitClientGenerator:
 
         config_path.write_text(content, encoding='utf-8')
 
+    def _find_file_recursive(self, filename: str, search_path: Path) -> Path:
+        """Recursively search for a file in the project."""
+        for root, dirs, files in os.walk(search_path):
+            if filename in files:
+                found_path = Path(root) / filename
+                click.echo(f"✓ Found {filename} at {found_path.relative_to(self.project_root)}")
+                return found_path
+        return None
+
     def _add_to_application_yaml(self):
         """Add configuration block to application-local.yml."""
         yaml_path = self.project_root / 'src' / 'main' / 'resources' / 'application-local.yml'
 
         if not yaml_path.exists():
-            click.echo(f"⚠️  application-local.yml not found at {yaml_path}")
-            return
+            click.echo(f"⚠️  application-local.yml not found at default location, searching...")
+            yaml_path = self._find_file_recursive('application-local.yml', self.project_root)
+            if not yaml_path:
+                click.echo(f"⚠️  application-local.yml not found in project")
+                return
 
         yaml = YAML()
         yaml.preserve_quotes = True
@@ -309,6 +327,19 @@ class RetrofitClientGenerator:
         if 'http-client' not in data:
             data['http-client'] = {}
 
+        # Ensure global properties exist
+        if 'timeout' not in data['http-client']:
+            data['http-client']['timeout'] = 30
+            click.echo(f"✓ Added default http-client.timeout property")
+
+        if 'logging-level' not in data['http-client']:
+            data['http-client']['logging-level'] = 'BODY'
+            click.echo(f"✓ Added default http-client.logging-level property")
+
+        if 'connect-timeout' not in data['http-client']:
+            data['http-client']['connect-timeout'] = 10
+            click.echo(f"✓ Added default http-client.connect-timeout property")
+
         # Check if service already configured
         if self.service_identifier in data['http-client']:
             click.echo(f"⚠️  Configuration for {self.service_identifier} already exists in YAML")
@@ -316,10 +347,10 @@ class RetrofitClientGenerator:
 
         # Add service configuration
         data['http-client'][self.service_identifier] = {
-            'baseUrl': self.base_url,
-            'loggingLevel': 'BODY',
-            'readTimeout': 30,
-            'connectTimeout': 30
+            'base-url': self.base_url,
+            'logging-level': '${http-client.logging-level}',
+            'read-timeout': '${http-client.timeout}',
+            'connect-timeout': '${http-client.connect-timeout}'
         }
 
         with open(yaml_path, 'w', encoding='utf-8') as f:
