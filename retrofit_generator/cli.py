@@ -77,6 +77,14 @@ class RetrofitClientGenerator:
             return pascal_case
         return pascal_case[0].lower() + pascal_case[1:]
 
+    @staticmethod
+    def _to_kebab_case(pascal_case: str) -> str:
+        """Convert PascalCase to kebab-case."""
+        import re
+        # Insert hyphen before uppercase letters (except the first one)
+        kebab = re.sub(r'(?<!^)(?=[A-Z])', '-', pascal_case)
+        return kebab.lower()
+
     def _infer_base_package(self) -> str:
         """Infer base package by finding the package containing a 'client' directory."""
         src_java = self.project_root / 'src' / 'main' / 'java'
@@ -377,23 +385,15 @@ class RetrofitClientGenerator:
         click.echo(f"✓ Added configuration to application-local.yml")
 
 
+def _generate_service_identifier(api_name: str) -> str:
+    """Generate kebab-case service identifier from PascalCase API name."""
+    import re
+    kebab = re.sub(r'(?<!^)(?=[A-Z])', '-', api_name)
+    return f"{kebab.lower()}-api"
+
+
 @click.command()
-@click.option('--api-name', prompt='API name (PascalCase, e.g. MapBox, UserProfile)',
-              help='Name of the API in PascalCase (e.g., UserProfile, MapBox)')
-@click.option('--endpoint-path', prompt='Endpoint path (e.g. api/v1/geocode)',
-              help='Relative URL path (e.g., api/v1/geocode)')
-@click.option('--base-url', prompt='Base URL (e.g. https://api.mapbox.com/)',
-              help='Base URL for the endpoint (e.g., https://api.mapbox.com/)')
-@click.option('--service-identifier', prompt='YAML property identifier (e.g. mapbox-api)',
-              help='Unique service identifier for YAML config (e.g., mapbox-api)')
-@click.option('--has-credentials', prompt='Does this API require credentials? (y/n)',
-              type=click.Choice(['y', 'n'], case_sensitive=False),
-              help='Whether this API requires credentials')
-@click.option('--credential-fields', prompt='Credential field names (comma-separated, e.g. apiKey,xRequestId)',
-              default='',
-              help='Comma-separated list of credential field names')
-def main(api_name: str, endpoint_path: str, base_url: str, service_identifier: str,
-         has_credentials: str, credential_fields: str):
+def main():
     """
     Generate a complete Retrofit API client for Java/Spring Boot projects.
 
@@ -408,9 +408,38 @@ def main(api_name: str, endpoint_path: str, base_url: str, service_identifier: s
             click.echo("The package may not be installed correctly.", err=True)
             sys.exit(1)
 
-        # Parse credentials
+        # Prompt for API name
+        api_name = click.prompt('API name (PascalCase, e.g. UserService, PaymentGateway)', type=str)
+
+        # Prompt for endpoint path
+        endpoint_path = click.prompt('Endpoint path (e.g. api/v1/users)', type=str)
+
+        # Prompt for base URL
+        base_url = click.prompt('Base URL (e.g. https://api.example.com/)', type=str)
+
+        # Generate default service identifier
+        default_identifier = _generate_service_identifier(api_name)
+        click.echo(f"\n💡 Generated YAML property identifier: {default_identifier}")
+        change_identifier = click.prompt('Do you want to change it? (y/n)',
+                                        type=click.Choice(['y', 'n'], case_sensitive=False),
+                                        default='n')
+
+        if change_identifier.lower() == 'y':
+            service_identifier = click.prompt('YAML property identifier', type=str)
+        else:
+            service_identifier = default_identifier
+            click.echo(f"✓ Using: {service_identifier}\n")
+
+        # Prompt for credentials
+        has_credentials = click.prompt('Does this API require credentials? (y/n)',
+                                      type=click.Choice(['y', 'n'], case_sensitive=False),
+                                      default='n')
+
         credentials = None
         if has_credentials.lower() == 'y':
+            credential_fields = click.prompt('Credential field names (comma-separated, e.g. apiKey,token)',
+                                           type=str,
+                                           default='')
             if credential_fields:
                 credentials = [field.strip() for field in credential_fields.split(',') if field.strip()]
             else:

@@ -64,12 +64,12 @@ Esto instala el comando `retrofit-generator` globalmente en tu sistema.
    ```
 
 3. **Responde las preguntas**:
-   - **API name** (PascalCase): Nombre de tu API (ej: `MapBox`, `UserProfile`)
-   - **Endpoint path**: Ruta relativa del endpoint (ej: `api/v1/geocode`)
-   - **Base URL**: URL base del servicio (ej: `https://api.mapbox.com/`)
-   - **Service identifier**: Identificador único para la config YAML (ej: `mapbox-api`)
+   - **API name** (PascalCase): Nombre de tu API (ej: `UserService`, `PaymentGateway`)
+   - **Endpoint path**: Ruta relativa del endpoint (ej: `api/v1/users`)
+   - **Base URL**: URL base del servicio (ej: `https://api.example.com/`)
+   - **Service identifier**: Se genera automáticamente en kebab-case con sufijo `-api` (ej: `UserService` → `user-service-api`). Puedes cambiarlo si lo necesitas.
    - **Does this API require credentials?**: Responde `y` si la API necesita autenticación, `n` si no
-   - **Credential field names**: Si la API requiere credenciales, especifica los nombres de los campos separados por comas (ej: `apiKey,xRequestId`)
+   - **Credential field names**: Si la API requiere credenciales, especifica los nombres de los campos separados por comas (ej: `apiKey,token`)
 
 4. **Completa los TODOs**:
    - El generador crea archivos Java con placeholders `/* TODO: Add fields */` que debes completar con los campos según la API
@@ -82,20 +82,23 @@ Esto instala el comando `retrofit-generator` globalmente en tu sistema.
 ```bash
 $ retrofit-generator
 
-API name (PascalCase, e.g. MapBox, UserProfile): MapBox
-Endpoint path (e.g. api/v1/geocode): api/v1/geocode
-Base URL (e.g. https://api.mapbox.com/): https://api.mapbox.com/
-YAML property identifier (e.g. mapbox-api): mapbox-api
-Does this API require credentials? (y/n): n
-Credential field names (comma-separated, e.g. apiKey,xRequestId):
+API name (PascalCase, e.g. UserService, PaymentGateway): UserService
+Endpoint path (e.g. api/v1/users): api/v1/users
+Base URL (e.g. https://api.example.com/): https://api.example.com/
 
-🚀 Generating Retrofit client for: MapBox
+💡 Generated YAML property identifier: user-service-api
+Do you want to change it? (y/n) [n]: n
+✓ Using: user-service-api
+
+Does this API require credentials? (y/n) [n]: n
+
+🚀 Generating Retrofit client for: UserService
    Base package: com.example.myapp
-   Endpoint: api/v1/geocode
+   Endpoint: api/v1/users
 
 📝 Generating Java files...
-✓ Created: src/main/java/com/example/myapp/client/dto/MapBoxRequestDto.java
-✓ Created: src/main/java/com/example/myapp/client/dto/MapBoxResponseDto.java
+✓ Created: src/main/java/com/example/myapp/client/dto/UserServiceRequestDto.java
+✓ Created: src/main/java/com/example/myapp/client/dto/UserServiceResponseDto.java
 ...
 
 ⚙️  Updating configuration files...
@@ -107,7 +110,7 @@ Credential field names (comma-separated, e.g. apiKey,xRequestId):
 ✓ Added default http-client.connect-timeout property
 ✓ Added configuration to application-local.yml
 
-✅ Successfully generated MapBox Retrofit client!
+✅ Successfully generated UserService Retrofit client!
 ```
 
 **YAML generado:**
@@ -116,8 +119,8 @@ http-client:
   timeout: 30
   logging-level: BODY
   connect-timeout: 10
-  mapbox-api:
-    base-url: https://api.mapbox.com/
+  user-service-api:
+    base-url: https://api.example.com/
     logging-level: ${http-client.logging-level}
     read-timeout: ${http-client.timeout}
     connect-timeout: ${http-client.connect-timeout}
@@ -128,19 +131,23 @@ http-client:
 ```bash
 $ retrofit-generator
 
-API name (PascalCase, e.g. MapBox, UserProfile): HerePartner
-Endpoint path (e.g. api/v1/geocode): v1/geocode
-Base URL (e.g. https://api.mapbox.com/): https://geocode.search.hereapi.com/
-YAML property identifier (e.g. mapbox-api): here-partner
-Does this API require credentials? (y/n): y
-Credential field names (comma-separated, e.g. apiKey,xRequestId): apiKey,xRequestId
+API name (PascalCase, e.g. UserService, PaymentGateway): PaymentGateway
+Endpoint path (e.g. api/v1/users): v1/payments
+Base URL (e.g. https://api.example.com/): https://payments.example.com/
 
-🚀 Generating Retrofit client for: HerePartner
+💡 Generated YAML property identifier: payment-gateway-api
+Do you want to change it? (y/n) [n]: n
+✓ Using: payment-gateway-api
+
+Does this API require credentials? (y/n) [n]: y
+Credential field names (comma-separated, e.g. apiKey,token): apiKey,secretKey
+
+🚀 Generating Retrofit client for: PaymentGateway
 ...
 ✓ Added configuration to application-local.yml
-✓ Added credentials section for here-partner
+✓ Added credentials section for payment-gateway-api
 
-✅ Successfully generated HerePartner Retrofit client!
+✅ Successfully generated PaymentGateway Retrofit client!
 ```
 
 **YAML generado:**
@@ -149,16 +156,16 @@ http-client:
   timeout: 30
   logging-level: BODY
   connect-timeout: 10
-  here-partner:
-    base-url: https://geocode.search.hereapi.com/
+  payment-gateway-api:
+    base-url: https://payments.example.com/
     logging-level: ${http-client.logging-level}
     read-timeout: ${http-client.timeout}
     connect-timeout: ${http-client.connect-timeout}
 
 credentials:
-  here-partner:
+  payment-gateway-api:
     apiKey: TODO_ADD_VALUE
-    xRequestId: TODO_ADD_VALUE
+    secretKey: TODO_ADD_VALUE
 ```
 
 ## Personalización de Templates
@@ -178,12 +185,12 @@ Todos los templates usan placeholders que puedes modificar según tus necesidade
 
 ### Placeholders disponibles:
 
-- `__ApiName__`: Nombre en PascalCase (ej: `MapBox`)
-- `__apiName__`: Nombre en camelCase (ej: `mapBox`)
+- `__ApiName__`: Nombre en PascalCase (ej: `UserService`)
+- `__apiName__`: Nombre en camelCase (ej: `userService`)
 - `__basePackage__`: Package base detectado (ej: `com.example.app`)
-- `__endpointPath__`: Path del endpoint (ej: `api/v1/geocode`)
-- `__baseUrl__`: URL base (ej: `https://api.mapbox.com/`)
-- `__serviceIdentifier__`: Identificador del servicio (ej: `mapbox-api`)
+- `__endpointPath__`: Path del endpoint (ej: `api/v1/users`)
+- `__baseUrl__`: URL base (ej: `https://api.example.com/`)
+- `__serviceIdentifier__`: Identificador del servicio (ej: `user-service-api`)
 
 ### Estructura de templates:
 
