@@ -68,20 +68,26 @@ Esto instala el comando `retrofit-generator` globalmente en tu sistema.
    - **Endpoint path**: Ruta relativa del endpoint (ej: `api/v1/geocode`)
    - **Base URL**: URL base del servicio (ej: `https://api.mapbox.com/`)
    - **Service identifier**: Identificador único para la config YAML (ej: `mapbox-api`)
+   - **Does this API require credentials?**: Responde `y` si la API necesita autenticación, `n` si no
+   - **Credential field names**: Si la API requiere credenciales, especifica los nombres de los campos separados por comas (ej: `apiKey,xRequestId`)
 
 4. **Completa los TODOs**:
-   El generador crea los archivos con placeholders `/* TODO: Add fields */`.
-   Debes agregar manualmente los campos de los records según la API.
+   - El generador crea archivos Java con placeholders `/* TODO: Add fields */` que debes completar con los campos según la API
+   - Si agregaste credenciales, actualiza los valores `TODO_ADD_VALUE` en el YAML con las credenciales reales
 
 ## Ejemplo de Uso
+
+### Ejemplo 1: API sin credenciales
 
 ```bash
 $ retrofit-generator
 
-API name (PascalCase): MapBox
-Endpoint path: api/v1/geocode
-Base URL: https://api.mapbox.com/
-Service identifier: mapbox-api
+API name (PascalCase, e.g. MapBox, UserProfile): MapBox
+Endpoint path (e.g. api/v1/geocode): api/v1/geocode
+Base URL (e.g. https://api.mapbox.com/): https://api.mapbox.com/
+YAML property identifier (e.g. mapbox-api): mapbox-api
+Does this API require credentials? (y/n): n
+Credential field names (comma-separated, e.g. apiKey,xRequestId):
 
 🚀 Generating Retrofit client for: MapBox
    Base package: com.example.myapp
@@ -96,9 +102,63 @@ Service identifier: mapbox-api
 ✓ Added import to RestClientConfig.java
 ✓ Added bean to RestClientConfig.java
 ✓ Added bean to EndpointsConfig.java
+✓ Added default http-client.timeout property
+✓ Added default http-client.logging-level property
+✓ Added default http-client.connect-timeout property
 ✓ Added configuration to application-local.yml
 
 ✅ Successfully generated MapBox Retrofit client!
+```
+
+**YAML generado:**
+```yaml
+http-client:
+  timeout: 30
+  logging-level: BODY
+  connect-timeout: 10
+  mapbox-api:
+    base-url: https://api.mapbox.com/
+    logging-level: ${http-client.logging-level}
+    read-timeout: ${http-client.timeout}
+    connect-timeout: ${http-client.connect-timeout}
+```
+
+### Ejemplo 2: API con credenciales
+
+```bash
+$ retrofit-generator
+
+API name (PascalCase, e.g. MapBox, UserProfile): HerePartner
+Endpoint path (e.g. api/v1/geocode): v1/geocode
+Base URL (e.g. https://api.mapbox.com/): https://geocode.search.hereapi.com/
+YAML property identifier (e.g. mapbox-api): here-partner
+Does this API require credentials? (y/n): y
+Credential field names (comma-separated, e.g. apiKey,xRequestId): apiKey,xRequestId
+
+🚀 Generating Retrofit client for: HerePartner
+...
+✓ Added configuration to application-local.yml
+✓ Added credentials section for here-partner
+
+✅ Successfully generated HerePartner Retrofit client!
+```
+
+**YAML generado:**
+```yaml
+http-client:
+  timeout: 30
+  logging-level: BODY
+  connect-timeout: 10
+  here-partner:
+    base-url: https://geocode.search.hereapi.com/
+    logging-level: ${http-client.logging-level}
+    read-timeout: ${http-client.timeout}
+    connect-timeout: ${http-client.connect-timeout}
+
+credentials:
+  here-partner:
+    apiKey: TODO_ADD_VALUE
+    xRequestId: TODO_ADD_VALUE
 ```
 
 ## Personalización de Templates
@@ -155,7 +215,7 @@ templates/
 
 ## Requisitos del Proyecto Java
 
-Tu proyecto debe tener la siguiente estructura estándar:
+Tu proyecto debe tener la siguiente estructura (o el generador buscará recursivamente):
 
 ```
 your-java-project/
@@ -163,20 +223,42 @@ your-java-project/
 │   └── main/
 │       ├── java/
 │       │   └── com/example/yourapp/
-│       │       ├── client/          # ← El generador busca este directorio
+│       │       ├── client/          # ← REQUERIDO: El generador busca este directorio
 │       │       └── config/
-│       │           ├── RestClientConfig.java
+│       │           ├── RestClientConfig.java      # ← Buscado recursivamente si no está aquí
 │       │           └── endpoints/
-│       │               └── EndpointsConfig.java
+│       │               └── EndpointsConfig.java   # ← Buscado recursivamente si no está aquí
 │       └── resources/
-│           └── application-local.yml
+│           └── application-local.yml              # ← Buscado recursivamente si no está aquí
 ```
+
+**Nota:** El directorio `client` **debe existir** para la detección del base package. Los demás archivos se buscan recursivamente si no están en la ubicación estándar.
+
+## Características Avanzadas
+
+### Búsqueda Recursiva de Archivos
+Si los archivos de configuración no están en las ubicaciones estándar, el generador los busca recursivamente en todo el proyecto.
+
+### Properties YAML con Placeholders
+Las configuraciones usan **kebab-case** y referencian propiedades globales:
+- `base-url`: URL específica del servicio
+- `logging-level`: Referencia a `${http-client.logging-level}`
+- `read-timeout`: Referencia a `${http-client.timeout}`
+- `connect-timeout`: Referencia a `${http-client.connect-timeout}`
+
+### Creación Automática de Properties Globales
+Si las properties globales de `http-client` no existen, se crean automáticamente con valores por defecto.
+
+### Gestión de Credenciales
+Opcionalmente agrega una sección `credentials` con campos personalizables para APIs que requieren autenticación.
 
 ## Notas
 
 - El script detecta automáticamente el **base package** buscando un directorio llamado `client` dentro de `src/main/java/`
 - Si un archivo ya existe, el generador lo saltea con una advertencia
 - Los archivos de configuración existentes son modificados (se agregan imports/beans/YAML)
+- Si las configuraciones del servicio ya existen, no se sobrescriben
+- Los valores de credenciales deben actualizarse manualmente desde `TODO_ADD_VALUE`
 
 ## Dependencias
 

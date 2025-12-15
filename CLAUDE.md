@@ -94,9 +94,18 @@ Placeholders appear in both file **names** and **content**.
 **Modified (existing files):**
 - `RestClientConfig.java`: Adds import and @Bean method
 - `EndpointsConfig.java`: Adds @Bean method
-- `application-local.yml`: Adds service configuration block
+- `application-local.yml`: Adds service configuration block with kebab-case properties and optional credentials section
 
 Modifications use regex patterns to find insertion points (e.g., after last import, after last bean).
+
+### Configuration File Search
+
+If configuration files are not found at their expected locations, the generator performs a recursive search throughout the project:
+- `RestClientConfig.java` - searched recursively from project root
+- `EndpointsConfig.java` - searched recursively from project root
+- `application-local.yml` - searched recursively from project root
+
+This makes the generator more flexible for projects with non-standard directory structures.
 
 ### Package Detection
 
@@ -122,6 +131,38 @@ Example: If it finds `src/main/java/com/example/myapp/client/`, the base package
 - **EndpointsConfig**: Inserts bean after last @Bean method
 - **YAML**: Uses `ruamel.yaml` to preserve formatting while adding entries
 
+### YAML Configuration Strategy
+
+The generator creates kebab-case properties (not camelCase) following Spring Boot conventions:
+
+1. **Global properties creation**: If `http-client` global properties don't exist, creates them automatically:
+   - `timeout: 30`
+   - `logging-level: BODY`
+   - `connect-timeout: 10`
+
+2. **Service configuration**: Uses Spring placeholders to reference global properties:
+   ```yaml
+   http-client:
+     timeout: 30
+     logging-level: BODY
+     connect-timeout: 10
+     mapbox-api:
+       base-url: https://api.mapbox.com/
+       logging-level: ${http-client.logging-level}
+       read-timeout: ${http-client.timeout}
+       connect-timeout: ${http-client.connect-timeout}
+   ```
+
+3. **Credentials section**: Optionally creates a `credentials` section if the API requires authentication:
+   ```yaml
+   credentials:
+     mapbox-api:
+       apiKey: TODO_ADD_VALUE
+       token: TODO_ADD_VALUE
+   ```
+
+4. **Validation**: Checks if service configuration or credentials already exist before adding to prevent overwrites
+
 ### Error Handling
 
 - Checks for template directory existence
@@ -141,9 +182,22 @@ Templates can be edited directly in `retrofit_generator/templates/`. If installe
 
 All templates are plain text files with placeholders. The generator doesn't parse Java syntax—it does simple string replacement.
 
+## User Interaction Flow
+
+The CLI prompts for:
+1. **API name** (PascalCase): Used for class names
+2. **Endpoint path**: Relative URL path for the API
+3. **Base URL**: Full base URL of the service
+4. **Service identifier**: kebab-case identifier for YAML configuration
+5. **Has credentials?** (y/n): Whether API requires authentication
+6. **Credential fields**: Comma-separated list of credential field names (e.g., `apiKey,xRequestId`)
+
 ## Common Gotchas
 
 - The tool must be run from the **root of the Java project**, not from this repository
 - Base package detection requires a `client` directory to exist
 - Generated Java files include `/* TODO: Add fields */` comments that must be filled manually
 - Configuration file modifications assume specific code patterns (imports section, @Bean methods, closing braces)
+- After modifying code or templates, reinstall with `pip install --force-reinstall -e .`
+- YAML properties use kebab-case (not camelCase) following Spring Boot conventions
+- Credential values are set to `TODO_ADD_VALUE` and must be updated manually

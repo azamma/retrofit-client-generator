@@ -32,7 +32,8 @@ class RetrofitClientGenerator:
         base_url: str,
         service_identifier: str,
         project_root: Path,
-        template_dir: Path
+        template_dir: Path,
+        credentials: list = None
     ):
         self.api_name_pascal = api_name
         self.api_name_camel = self._to_camel_case(api_name)
@@ -41,6 +42,7 @@ class RetrofitClientGenerator:
         self.service_identifier = service_identifier
         self.project_root = project_root
         self.template_dir = template_dir
+        self.credentials = credentials
 
         self.base_package = self._infer_base_package()
         self.base_package_path = self.base_package.replace('.', '/')
@@ -280,6 +282,22 @@ class RetrofitClientGenerator:
             'connect-timeout': '${http-client.connect-timeout}'
         }
 
+        # Add credentials section if needed
+        if self.credentials:
+            if 'credentials' not in data:
+                data['credentials'] = {}
+
+            # Check if credentials for this service already exist
+            if self.service_identifier in data['credentials']:
+                click.echo(f"⚠️  Credentials for {self.service_identifier} already exist in YAML")
+            else:
+                credentials_dict = {}
+                for field in self.credentials:
+                    credentials_dict[field] = 'TODO_ADD_VALUE'
+
+                data['credentials'][self.service_identifier] = credentials_dict
+                click.echo(f"✓ Added credentials section for {self.service_identifier}")
+
         with open(yaml_path, 'w') as f:
             yaml.dump(data, f)
 
@@ -295,7 +313,14 @@ class RetrofitClientGenerator:
               help='Base URL for the endpoint (e.g., https://api.mapbox.com/)')
 @click.option('--service-identifier', prompt='Service identifier',
               help='Unique service identifier (e.g., mapbox-api)')
-def main(api_name: str, endpoint_path: str, base_url: str, service_identifier: str):
+@click.option('--has-credentials', prompt='Does this API require credentials? (y/n)',
+              type=click.Choice(['y', 'n'], case_sensitive=False),
+              help='Whether this API requires credentials')
+@click.option('--credential-fields', prompt='Credential field names (comma-separated, e.g. apiKey,xRequestId)',
+              default='',
+              help='Comma-separated list of credential field names')
+def main(api_name: str, endpoint_path: str, base_url: str, service_identifier: str,
+         has_credentials: str, credential_fields: str):
     """
     Generate a complete Retrofit API client for Java/Spring Boot projects.
 
@@ -316,6 +341,14 @@ def main(api_name: str, endpoint_path: str, base_url: str, service_identifier: s
             click.echo("Make sure you're running this script from the retrofit-generator directory.", err=True)
             sys.exit(1)
 
+        # Parse credentials
+        credentials = None
+        if has_credentials.lower() == 'y':
+            if credential_fields:
+                credentials = [field.strip() for field in credential_fields.split(',') if field.strip()]
+            else:
+                click.echo("⚠️  No credential fields provided, skipping credentials section")
+
         # Generate client
         generator = RetrofitClientGenerator(
             api_name=api_name,
@@ -323,7 +356,8 @@ def main(api_name: str, endpoint_path: str, base_url: str, service_identifier: s
             base_url=base_url,
             service_identifier=service_identifier,
             project_root=project_root,
-            template_dir=template_dir
+            template_dir=template_dir,
+            credentials=credentials
         )
         generator.generate_all()
 
