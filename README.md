@@ -71,7 +71,7 @@ Esto instala el comando `retrofit-generator` globalmente en tu sistema.
    - **Base URL**: URL base del servicio (ej: `https://api.example.com/`)
    - **Service identifier**: Se genera automáticamente en kebab-case con sufijo `-api` (ej: `UserService` → `user-service-api`). Puedes cambiarlo si lo necesitas.
    - **Does this API require credentials?**: Responde `y` si la API necesita autenticación, `n` si no
-   - **Credential field names**: Si la API requiere credenciales, especifica los nombres de los campos separados por comas (ej: `apiKey,token`)
+   - **Credential field names**: Si la API requiere credenciales, especifica los nombres de los campos separados por comas en kebab-case (ej: `api-key,token`)
 
 4. **Completa los TODOs**:
    - El generador crea archivos Java con placeholders `/* TODO: Add fields */` que debes completar con los campos según la API
@@ -89,7 +89,7 @@ retrofit-generator --api-name=<NombreAPI> --endpoint-path=<ruta> --base-url=<url
 retrofit-generator --api-name=UserService --endpoint-path=api/v1/users --base-url=https://api.example.com/
 
 # API con credenciales
-retrofit-generator --api-name=PaymentGateway --endpoint-path=v1/payments --base-url=https://pay.example.com/ --credentials=apiKey,secretKey
+retrofit-generator --api-name=PaymentGateway --endpoint-path=v1/payments --base-url=https://pay.example.com/ --credentials=api-key,secret-key
 
 # Con service identifier personalizado
 retrofit-generator --api-name=BigDataCloud --endpoint-path=data/reverse-geocode --base-url=https://api-bdc.net/ --service-identifier=bdc-geo-api
@@ -100,7 +100,7 @@ retrofit-generator --api-name=BigDataCloud --endpoint-path=data/reverse-geocode 
 - `--endpoint-path`: Ruta del endpoint (requerido)
 - `--base-url`: URL base del servicio (requerido)
 - `--service-identifier`: Identificador YAML (opcional, se auto-genera si no se proporciona)
-- `--credentials`: Lista de campos de credenciales separados por comas (opcional)
+- `--credentials`: Lista de campos de credenciales en kebab-case separados por comas (opcional)
 
 **Ver ayuda:**
 ```bash
@@ -172,7 +172,7 @@ Do you want to change it? (y/n) [n]: n
 ✓ Using: payment-gateway-api
 
 Does this API require credentials? (y/n) [n]: y
-Credential field names (comma-separated, e.g. apiKey,token): apiKey,secretKey
+Credential field names (comma-separated, e.g. api-key,token): api-key,secret-key
 
 🚀 Generating Retrofit client for: PaymentGateway
 ...
@@ -196,8 +196,8 @@ http-client:
 
 credentials:
   payment-gateway-api:
-    apiKey: TODO_ADD_VALUE
-    secretKey: TODO_ADD_VALUE
+    api-key: TODO_ADD_VALUE
+    secret-key: TODO_ADD_VALUE
 ```
 
 ### Ejemplo 3: Modo No-Interactivo - Una sola línea
@@ -245,10 +245,10 @@ http-client:
 ### Ejemplo 4: Modo No-Interactivo - Con credenciales
 
 ```bash
-$ retrofit-generator --api-name=AuthService --endpoint-path=oauth/v2/token --base-url=https://auth.example.com/ --credentials=clientId,clientSecret
+$ retrofit-generator --api-name=AuthService --endpoint-path=oauth/v2/token --base-url=https://auth.example.com/ --credentials=client-id,client-secret
 
 ✓ Generated service identifier: auth-service-api
-✓ Using credentials: clientId, clientSecret
+✓ Using credentials: client-id, client-secret
 
 🚀 Generating Retrofit client for: AuthService
 ...
@@ -271,8 +271,8 @@ http-client:
 
 credentials:
   auth-service-api:
-    clientId: TODO_ADD_VALUE
-    clientSecret: TODO_ADD_VALUE
+    client-id: TODO_ADD_VALUE
+    client-secret: TODO_ADD_VALUE
 ```
 
 ## Personalización de Templates

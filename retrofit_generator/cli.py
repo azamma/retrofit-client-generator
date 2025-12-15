@@ -397,7 +397,7 @@ def _generate_service_identifier(api_name: str) -> str:
 @click.option('--endpoint-path', default=None, help='Endpoint path (e.g., api/v1/users)')
 @click.option('--base-url', default=None, help='Base URL (e.g., https://api.example.com/)')
 @click.option('--service-identifier', default=None, help='YAML property identifier (e.g., user-service-api). If not provided, auto-generated from api-name')
-@click.option('--credentials', default=None, help='Comma-separated credential field names (e.g., apiKey,token). Omit if no credentials needed')
+@click.option('--credentials', default=None, help='Comma-separated credential field names (e.g., api-key,token). Omit if no credentials needed')
 def main(api_name, endpoint_path, base_url, service_identifier, credentials):
     """
     Generate a complete Retrofit API client for Java/Spring Boot projects.
@@ -413,7 +413,7 @@ def main(api_name, endpoint_path, base_url, service_identifier, credentials):
       retrofit-generator --api-name=UserService --endpoint-path=api/v1/users --base-url=https://api.example.com/
 
       # With credentials
-      retrofit-generator --api-name=PaymentGateway --endpoint-path=v1/payments --base-url=https://pay.example.com/ --credentials=apiKey,secretKey
+      retrofit-generator --api-name=PaymentGateway --endpoint-path=v1/payments --base-url=https://pay.example.com/ --credentials=api-key,secret-key
     """
     try:
         project_root = Path.cwd()
@@ -464,7 +464,7 @@ def main(api_name, endpoint_path, base_url, service_identifier, credentials):
                                           type=click.Choice(['y', 'n'], case_sensitive=False),
                                           default='n')
             if has_credentials.lower() == 'y':
-                credential_fields = click.prompt('Credential field names (comma-separated, e.g. apiKey,token)',
+                credential_fields = click.prompt('Credential field names (comma-separated, e.g. api-key,token)',
                                                type=str,
                                                default='')
                 if credential_fields:
